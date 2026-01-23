@@ -258,6 +258,7 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
       int previousCount = 0;
       int canceledMembers = 0;
       int totalMembers = coThreads.size();
+      listener.getLogger().println("Total members to checkout: " + totalMembers);
       while (!coThreads.isEmpty())
       {
         @SuppressWarnings("rawtypes")
@@ -306,12 +307,16 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
             iter.remove();
           }
         }
+        listener.getLogger().println("members to synch: " + (projectMembersList.size() - previousCount));
         if (previousCount != (checkoutMembers + canceledMembers))
         {
           LOGGER.fine("Checkout process: " + checkoutMembers + " of " + totalMembers
-              + (canceledMembers > 0 ? "(Canceled: " + canceledMembers + ")" : ""));
+              + (canceledMembers > 0 ? "(Canceled: " + canceledMembers + ")" : ""));   
+          //listener.getLogger().println("Checkout process: " + checkoutMembers + " of " + totalMembers
+          //    + (canceledMembers > 0 ? "(Canceled: " + canceledMembers + ")" : ""));
         }
         previousCount = checkoutMembers + canceledMembers;
+        
         // Wait 2 seconds a check again if all threads are done
         Thread.sleep(2000);
       }
