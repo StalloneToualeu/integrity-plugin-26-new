@@ -43,7 +43,7 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
 {
   private static final long serialVersionUID = 1240357991626897900L;
   private static final Logger LOGGER = Logger.getLogger(IntegritySCM.class.getSimpleName());
-  private static final int CHECKOUT_TRESHOLD = 5000;
+  private static final int CHECKOUT_TRESHOLD = 100;
   private final List<Hashtable<CM_PROJECT, Object>> projectMembersList;
   private final List<String> dirList;
   private final String lineTerminator;
