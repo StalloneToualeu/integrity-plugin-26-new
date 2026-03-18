@@ -938,6 +938,8 @@ public class DerbyUtils
       db = DescriptorImpl.INTEGRITY_DESCRIPTOR.getDataSource().getPooledConnection()
           .getConnection();
 
+      db.setAutoCommit(false);
+
       if (CPMode) // CP Mode comparison
       {
         // All members in CP(s) at this stage are from a closed CP. So we update their deltas in the
@@ -1238,38 +1240,27 @@ public class DerbyUtils
               + memberInfo.get(CM_PROJECT.REVISION).toString());
         }
         // Commit changes to the database...
-        db.commit();
+        // db.commit(); TTS
       }
     } finally
 
     {
-      // Close the result set and select statements
-      if (null != baselineRS)
-      {
-        baselineRS.close();
-      }
       if (null != rs)
       {
         rs.close();
-      }
-      if (null != baselineSelect)
-      {
-        baselineSelect.close();
       }
       if (null != pjSelect)
       {
         pjSelect.close();
       }
-      if (null != select)
-      {
-        select.close();
-      }
-
+      select.close();
+      baselineRS.close();
+      baselineSelect.close();
       // Close DB connection
-      if (null != db)
-      {
-        db.close();
-      }
+      db.commit();
+      db.setAutoCommit(true);
+       db.close();
+
     }
 
     return changeCount;
@@ -1288,8 +1279,12 @@ public class DerbyUtils
     try (Connection db = DescriptorImpl.INTEGRITY_DESCRIPTOR.getDataSource().getPooledConnection()
             .getConnection(); PreparedStatement authSelect = db.prepareStatement(DerbyUtils.AUTHOR_SELECT.replaceFirst("CM_PROJECT", projectCacheTable), ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE); ResultSet rs = authSelect.executeQuery()) {
       // Get a connection from our pool
+<<<<<<< HEAD
       listener.getLogger().print("Priming author information for project members...\n");
       listener.getLogger().println("This may take a while depending on the project size expected 15 mins for 10,000 files...");
+=======
+      db.setAutoCommit(false);
+>>>>>>> 05bb715
       while (rs.next()) {
         Hashtable<CM_PROJECT, Object> rowHash = DerbyUtils.getRowData(rs);
         rs.updateString(CM_PROJECT.AUTHOR.toString(),
@@ -1302,6 +1297,8 @@ public class DerbyUtils
 
       // Commit the updates
       db.commit();
+      db.setAutoCommit(true);
+      db.close();
     }
     // Release the result set
 
@@ -1324,6 +1321,7 @@ public class DerbyUtils
             .getConnection(); PreparedStatement checksumSelect = db.prepareStatement(DerbyUtils.CHECKSUM_UPDATE.replaceFirst("CM_PROJECT", projectCacheTable), ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE); ResultSet rs = checksumSelect.executeQuery()) {
       // Get a connection from our pool
       // Create the select statement for the current project
+      db.setAutoCommit(false);
       LOGGER.finer(String.format("Updating checksums for table: %s", rs.toString()));
       while (rs.next()) {
         Hashtable<CM_PROJECT, Object> rowHash = DerbyUtils.getRowData(rs);
@@ -1336,7 +1334,9 @@ public class DerbyUtils
       }
 
       // Commit the updates
-      db.commit();
+            db.commit();
+            db.setAutoCommit(true);
+            db.close();
     }
     // Release the result set
 
