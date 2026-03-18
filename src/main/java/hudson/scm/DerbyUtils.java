@@ -1279,12 +1279,10 @@ public class DerbyUtils
     try (Connection db = DescriptorImpl.INTEGRITY_DESCRIPTOR.getDataSource().getPooledConnection()
             .getConnection(); PreparedStatement authSelect = db.prepareStatement(DerbyUtils.AUTHOR_SELECT.replaceFirst("CM_PROJECT", projectCacheTable), ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE); ResultSet rs = authSelect.executeQuery()) {
       // Get a connection from our pool
-<<<<<<< HEAD
       listener.getLogger().print("Priming author information for project members...\n");
       listener.getLogger().println("This may take a while depending on the project size expected 15 mins for 10,000 files...");
-=======
       db.setAutoCommit(false);
->>>>>>> 05bb715
+
       while (rs.next()) {
         Hashtable<CM_PROJECT, Object> rowHash = DerbyUtils.getRowData(rs);
         rs.updateString(CM_PROJECT.AUTHOR.toString(),
