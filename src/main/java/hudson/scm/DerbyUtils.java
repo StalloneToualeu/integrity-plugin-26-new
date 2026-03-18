@@ -977,7 +977,7 @@ public class DerbyUtils
                   LOGGER
                       .fine("... " + cpMemberName + " new file - revision is " + cpMemberRevision);
                   rs.updateRow();
-                  db.commit();
+                  //db.commit(); TTS
                 }
                 break;
               case DROP:
@@ -1014,7 +1014,7 @@ public class DerbyUtils
                 }
                 LOGGER.fine("... " + cpMemberName + " file operation: "
                     + cpMemberOperation.toString() + " - revision was " + cpMemberRevision);
-                db.commit();
+                //db.commit(); TTS
                 break;
               case UPDATE:
                 if (rs.getRow() != 0)
@@ -1025,7 +1025,7 @@ public class DerbyUtils
                   LOGGER.fine("... " + cpMemberName + " revision changed - new revision is "
                       + cpMemberRevision);
                   rs.updateRow();
-                  db.commit();
+                  // db.commit(); TTS
                 }
                 break;
               case RENAME:
@@ -1056,7 +1056,7 @@ public class DerbyUtils
                       "... " + cpMemberName + " renamed - new revision is " + cpMemberRevision);
                   rs.updateRow();
                 }
-                db.commit();
+                // db.commit(); TTS
                 break;
               case ADDFROMARCHIVE: {
                 // NOOP
