@@ -938,6 +938,7 @@ public class DerbyUtils
       // Get a connection from our pool
       db = DescriptorImpl.INTEGRITY_DESCRIPTOR.getDataSource().getPooledConnection()
           .getConnection();
+      db.setAutoCommit(false);
 
       if (CPMode) // CP Mode comparison
       {
@@ -976,7 +977,6 @@ public class DerbyUtils
                   LOGGER
                       .fine("... " + cpMemberName + " new file - revision is " + cpMemberRevision);
                   rs.updateRow();
-                  db.commit();
                 }
                 break;
               case DROP:
@@ -1013,7 +1013,6 @@ public class DerbyUtils
                 }
                 LOGGER.fine("... " + cpMemberName + " file operation: "
                     + cpMemberOperation.toString() + " - revision was " + cpMemberRevision);
-                db.commit();
                 break;
               case UPDATE:
                 if (rs.getRow() != 0)
@@ -1024,7 +1023,6 @@ public class DerbyUtils
                   LOGGER.fine("... " + cpMemberName + " revision changed - new revision is "
                       + cpMemberRevision);
                   rs.updateRow();
-                  db.commit();
                 }
                 break;
               case RENAME:
@@ -1055,7 +1053,6 @@ public class DerbyUtils
                       "... " + cpMemberName + " renamed - new revision is " + cpMemberRevision);
                   rs.updateRow();
                 }
-                db.commit();
                 break;
               case ADDFROMARCHIVE: {
                 // NOOP
@@ -1300,8 +1297,10 @@ public class DerbyUtils
       String projectCacheTable, TaskListener listener) throws SQLException, IOException
   {
     listener.getLogger().println("Begin DerbyUtils.primeAuthorInformation");
-    try (Connection db = DescriptorImpl.INTEGRITY_DESCRIPTOR.getDataSource().getPooledConnection()
-            .getConnection(); PreparedStatement authSelect = db.prepareStatement(DerbyUtils.AUTHOR_SELECT.replaceFirst("CM_PROJECT", projectCacheTable), ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE); ResultSet rs = authSelect.executeQuery()) {
+    Connection db = DescriptorImpl.INTEGRITY_DESCRIPTOR.getDataSource().getPooledConnection()
+            .getConnection();
+    db.setAutoCommit(false);
+    try (PreparedStatement authSelect = db.prepareStatement(DerbyUtils.AUTHOR_SELECT.replaceFirst("CM_PROJECT", projectCacheTable), ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE); ResultSet rs = authSelect.executeQuery()) {
       // Get a connection from our pool
       while (rs.next()) {
         Hashtable<CM_PROJECT, Object> rowHash = DerbyUtils.getRowData(rs);
@@ -1321,6 +1320,11 @@ public class DerbyUtils
     // Release the statement
 
     // Close project db connections
+    finally {
+      if (db != null) {
+        db.close();
+      }
+    }
     listener.getLogger().println("Finished DerbyUtils.primeAuthorInformation");
   }
 

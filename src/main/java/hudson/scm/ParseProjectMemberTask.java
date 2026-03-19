@@ -47,6 +47,7 @@ public class ParseProjectMemberTask implements Callable<Void>
   {
     // Get a connection from our pool
     db = DescriptorImpl.INTEGRITY_DESCRIPTOR.getDataSource().getPooledConnection().getConnection();
+    db.setAutoCommit(false);
     String insertSQL = DerbyUtils.INSERT_MEMBER_RECORD.replaceFirst("CM_PROJECT",
         siProject.getProjectCacheTable());
     this.insert = db.prepareStatement(insertSQL);
