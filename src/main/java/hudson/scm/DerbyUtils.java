@@ -915,8 +915,9 @@ public class DerbyUtils
    */
   public static synchronized int compareBaseline(String serverConfigId, String baselineProjectCache,
       String projectCacheTable, Map<CPInfo, List<CPMember>> membersInCP, boolean skipAuthorInfo,
-      boolean CPMode) throws SQLException, IOException
+      boolean CPMode, TaskListener listener) throws SQLException, IOException
   {
+    listener.getLogger().println("		Begin DerbyUtils.compareBaseline");
     // Re-initialize our return variable
     int changeCount = 0;
 
@@ -937,6 +938,7 @@ public class DerbyUtils
       // Get a connection from our pool
       db = DescriptorImpl.INTEGRITY_DESCRIPTOR.getDataSource().getPooledConnection()
           .getConnection();
+      db.setAutoCommit(false);
 
       db.setAutoCommit(false);
 
@@ -977,7 +979,6 @@ public class DerbyUtils
                   LOGGER
                       .fine("... " + cpMemberName + " new file - revision is " + cpMemberRevision);
                   rs.updateRow();
-                  //db.commit(); TTS
                 }
                 break;
               case DROP:
@@ -1014,7 +1015,6 @@ public class DerbyUtils
                 }
                 LOGGER.fine("... " + cpMemberName + " file operation: "
                     + cpMemberOperation.toString() + " - revision was " + cpMemberRevision);
-                //db.commit(); TTS
                 break;
               case UPDATE:
                 if (rs.getRow() != 0)
@@ -1025,7 +1025,6 @@ public class DerbyUtils
                   LOGGER.fine("... " + cpMemberName + " revision changed - new revision is "
                       + cpMemberRevision);
                   rs.updateRow();
-                  // db.commit(); TTS
                 }
                 break;
               case RENAME:
@@ -1056,7 +1055,6 @@ public class DerbyUtils
                       "... " + cpMemberName + " renamed - new revision is " + cpMemberRevision);
                   rs.updateRow();
                 }
-                // db.commit(); TTS
                 break;
               case ADDFROMARCHIVE: {
                 // NOOP
@@ -1122,13 +1120,24 @@ public class DerbyUtils
         rs = pjSelect.executeQuery();
         
         // Now we will compare the adds and updates between the current project and the baseline
-        for (int i = 1; i <= DerbyUtils.getRowCount(rs); i++)
+        int totalRows = DerbyUtils.getRowCount(rs);
+        listener.getLogger().println("PTC Plugin: Begin Compare Baseline...");
+        listener.getLogger().println("PTC Plugin: Number of elements to process: " + totalRows);
+        int lastPercent = -1;
+        for (int i = 1; i <= totalRows; i++)
         {
           // Move the cursor to the current record
           rs.absolute(i);
           Hashtable<CM_PROJECT, Object> rowHash = DerbyUtils.getRowData(rs);
           // Obtain the member we're working with
           String memberName = rowHash.get(CM_PROJECT.NAME).toString();
+
+          int percent = (i * 100) / totalRows;
+          if (percent % 10 == 0 && percent != lastPercent)
+          {
+            listener.getLogger().println(percent + "% done ...");
+            lastPercent = percent;
+          }
 
           // Get the baseline project information for this member
           LOGGER.fine("Comparing file against baseline " + memberName);
@@ -1240,7 +1249,8 @@ public class DerbyUtils
               + memberInfo.get(CM_PROJECT.REVISION).toString());
         }
         // Commit changes to the database...
-        // db.commit(); TTS
+        db.commit();
+        listener.getLogger().println("PTC Plugin: Finished Compare Baseline");
       }
     } finally
 
@@ -1263,6 +1273,7 @@ public class DerbyUtils
 
     }
 
+    listener.getLogger().println("		End DerbyUtils.compareBaseline");
     return changeCount;
 
   }
@@ -1274,10 +1285,13 @@ public class DerbyUtils
    * @throws IOException
    */
   public static synchronized void primeAuthorInformation(String serverConfigId,
-      String projectCacheTable,TaskListener listener) throws SQLException, IOException
+      String projectCacheTable, TaskListener listener) throws SQLException, IOException
   {
-    try (Connection db = DescriptorImpl.INTEGRITY_DESCRIPTOR.getDataSource().getPooledConnection()
-            .getConnection(); PreparedStatement authSelect = db.prepareStatement(DerbyUtils.AUTHOR_SELECT.replaceFirst("CM_PROJECT", projectCacheTable), ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE); ResultSet rs = authSelect.executeQuery()) {
+    listener.getLogger().println("Begin DerbyUtils.primeAuthorInformation");
+    Connection db = DescriptorImpl.INTEGRITY_DESCRIPTOR.getDataSource().getPooledConnection()
+            .getConnection();
+    db.setAutoCommit(false);
+    try (PreparedStatement authSelect = db.prepareStatement(DerbyUtils.AUTHOR_SELECT.replaceFirst("CM_PROJECT", projectCacheTable), ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE); ResultSet rs = authSelect.executeQuery()) {
       // Get a connection from our pool
       listener.getLogger().print("Priming author information for project members...\n");
       listener.getLogger().println("This may take a while depending on the project size expected 15 mins for 10,000 files...");
@@ -1303,6 +1317,12 @@ public class DerbyUtils
     // Release the statement
 
     // Close project db connections
+    finally {
+      if (db != null) {
+        db.close();
+      }
+    }
+    listener.getLogger().println("Finished DerbyUtils.primeAuthorInformation");
   }
 
   /**
