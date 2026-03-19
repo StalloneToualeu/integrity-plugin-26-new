@@ -339,10 +339,10 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
           int percentBucket = percent / 10;
           if (percentBucket != (lastPercentReported / 10))
           {
-            listener.getLogger().println(percent + "% done ...");
+            listener.getLogger().println(" " + percent + "% done ...");
             lastPercentReported = percent;
           }
-          listener.getLogger().println("members to synch: " + (totalMembers - done));
+          listener.getLogger().println("0");
           LOGGER.fine("Checkout process: " + checkoutMembers + " of " + totalMembers
               + (canceledMembers > 0 ? "(Canceled: " + canceledMembers + ")" : ""));
           lastLogTime = currentTime;
