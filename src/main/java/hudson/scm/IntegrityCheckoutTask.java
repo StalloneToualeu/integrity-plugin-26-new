@@ -265,8 +265,6 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
       long checkoutTimeoutMs = checkoutThreadTimeout * 60L * 1000L; // Convert minutes to milliseconds
       long lastLogTime = checkoutStartTime;
       long logIntervalMs = 1000; // Log every 1 second
-      long lastLogTime = checkoutStartTime;
-      long logIntervalMs = 1000; // Log every 1 second
       
       listener.getLogger().println("members to synch: " + totalMembers);
       listener.getLogger().println(" ############ Total members to checkout: " + totalMembers);
@@ -276,11 +274,7 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
         @SuppressWarnings("rawtypes")
         Iterator<Future> iter = coThreads.iterator();
         boolean anyCompleted = false;
-        boolean anyCompleted = false;
-        
-        // Check ONLY one future per iteration with a very short timeout
-        // This keeps the loop responsive and logs frequently
-        if (iter.hasNext())
+
         // Check ONLY one future per iteration with a very short timeout
         // This keeps the loop responsive and logs frequently
         if (iter.hasNext())
@@ -292,25 +286,20 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
             canceledMembers++;
             iter.remove();
             anyCompleted = true;
-            anyCompleted = true;
-          } else
+          }
+          else
           {
-            // Check this single future with a very short timeout (50ms)
             // Check this single future with a very short timeout (50ms)
             try
             {
-              future.get(50, TimeUnit.MILLISECONDS);
               future.get(50, TimeUnit.MILLISECONDS);
               // Thread completed successfully
               checkoutMembers++;
               iter.remove();
               anyCompleted = true;
-              anyCompleted = true;
-            } catch(TimeoutException e) {
+            } catch (TimeoutException e)
+            {
               // Thread not done yet - will check next iteration
-              // Thread not done yet - will check next iteration
-              
-              // Check if overall checkout time has exceeded the per-thread timeout
               long elapsedMs = System.currentTimeMillis() - checkoutStartTime;
               if (elapsedMs > checkoutTimeoutMs)
               {
@@ -340,7 +329,7 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
             }
           }
         }
-        
+
         // Log progress every 1 second based on elapsed time, not iteration count
         long currentTime = System.currentTimeMillis();
         if (currentTime - lastLogTime >= logIntervalMs || anyCompleted)
@@ -353,7 +342,7 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
             listener.getLogger().println(percent + "% done ...");
             lastPercentReported = percent;
           }
-          listener.getLogger().print("0");
+          listener.getLogger().println("members to synch: " + (totalMembers - done));
           LOGGER.fine("Checkout process: " + checkoutMembers + " of " + totalMembers
               + (canceledMembers > 0 ? "(Canceled: " + canceledMembers + ")" : ""));
           lastLogTime = currentTime;
