@@ -1282,8 +1282,9 @@ public class DerbyUtils
    * @throws IOException
    */
   public static synchronized void primeAuthorInformation(String serverConfigId,
-      String projectCacheTable) throws SQLException, IOException
+      String projectCacheTable, TaskListener listener) throws SQLException, IOException
   {
+    listener.getLogger().println("Begin DerbyUtils.primeAuthorInformation");
     try (Connection db = DescriptorImpl.INTEGRITY_DESCRIPTOR.getDataSource().getPooledConnection()
             .getConnection(); PreparedStatement authSelect = db.prepareStatement(DerbyUtils.AUTHOR_SELECT.replaceFirst("CM_PROJECT", projectCacheTable), ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE); ResultSet rs = authSelect.executeQuery()) {
       // Get a connection from our pool
@@ -1305,6 +1306,7 @@ public class DerbyUtils
     // Release the statement
 
     // Close project db connections
+    listener.getLogger().println("Finished DerbyUtils.primeAuthorInformation");
   }
 
   /**

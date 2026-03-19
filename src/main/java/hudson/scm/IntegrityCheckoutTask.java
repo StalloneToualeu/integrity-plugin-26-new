@@ -184,6 +184,9 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
       // Create an empty folder structure first
       createFolderStructure(workspace);
 
+      // Log how many members we need to synchronize
+      listener.getLogger().println("members to synch: " + projectMembersList.size());
+
       // Perform a synchronize of each file in the member list...
       for (Iterator<Hashtable<CM_PROJECT, Object>> it = projectMembersList.iterator(); it
           .hasNext();)
@@ -258,6 +261,7 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
       int previousCount = 0;
       int canceledMembers = 0;
       int totalMembers = coThreads.size();
+      int lastPercentReported = -1;
       while (!coThreads.isEmpty())
       {
         @SuppressWarnings("rawtypes")
@@ -308,6 +312,14 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
         }
         if (previousCount != (checkoutMembers + canceledMembers))
         {
+          int done = checkoutMembers + canceledMembers;
+          int percent = (totalMembers > 0) ? (done * 100 / totalMembers) : 100;
+          int percentBucket = percent / 10;
+          if (percentBucket != (lastPercentReported / 10))
+          {
+            listener.getLogger().println(percent + "% done ...");
+            lastPercentReported = percent;
+          }
           LOGGER.fine("Checkout process: " + checkoutMembers + " of " + totalMembers
               + (canceledMembers > 0 ? "(Canceled: " + canceledMembers + ")" : ""));
         }
