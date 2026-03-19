@@ -262,6 +262,7 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
       int canceledMembers = 0;
       int totalMembers = coThreads.size();
       int lastPercentReported = -1;
+      listener.getLogger().println(" ############ Total members to checkout: " + totalMembers);
       while (!coThreads.isEmpty())
       {
         @SuppressWarnings("rawtypes")
@@ -320,6 +321,7 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
             listener.getLogger().println(percent + "% done ...");
             lastPercentReported = percent;
           }
+          listener.getLogger().println("members to synch: " + (projectMembersList.size() - done));
           LOGGER.fine("Checkout process: " + checkoutMembers + " of " + totalMembers
               + (canceledMembers > 0 ? "(Canceled: " + canceledMembers + ")" : ""));
         }
