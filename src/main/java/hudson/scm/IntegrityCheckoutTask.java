@@ -342,7 +342,7 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
             listener.getLogger().println(percent + "% done ...");
             lastPercentReported = percent;
           }
-          listener.getLogger().println("members to synch: " + (totalMembers - done));
+          listener.getLogger().print("0");
           LOGGER.fine("Checkout process: " + checkoutMembers + " of " + totalMembers
               + (canceledMembers > 0 ? "(Canceled: " + canceledMembers + ")" : ""));
           lastLogTime = currentTime;
