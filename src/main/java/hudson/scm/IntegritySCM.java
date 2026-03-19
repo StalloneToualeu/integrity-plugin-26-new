@@ -538,7 +538,7 @@ public class IntegritySCM extends AbstractIntegritySCM implements Serializable
           listener.getLogger().println("Found previous project state");
           LOGGER.fine("Found previous project state " + prevProjectCache);
           DerbyUtils.compareBaseline(serverConfig, prevProjectCache, projectCacheTable, membersInCP,
-                          skipAuthorInfo, CPBasedMode);
+                          skipAuthorInfo, CPBasedMode, listener);
         }
         else {
           listener.getLogger().println("No previous project cache.");
@@ -841,7 +841,7 @@ public class IntegritySCM extends AbstractIntegritySCM implements Serializable
 	    changeCount = DerbyUtils
 			    .compareBaseline(serverConfig, prevProjectCache,
 					    projectCacheTable, membersInCP,
-					    skipAuthorInfo, false);
+					    skipAuthorInfo, false, listener);
 	  }
 	  // Finally decide whether or not we need to build again
 	  if (changeCount > 0) {

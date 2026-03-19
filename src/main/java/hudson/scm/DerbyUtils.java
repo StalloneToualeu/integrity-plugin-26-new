@@ -915,8 +915,9 @@ public class DerbyUtils
    */
   public static synchronized int compareBaseline(String serverConfigId, String baselineProjectCache,
       String projectCacheTable, Map<CPInfo, List<CPMember>> membersInCP, boolean skipAuthorInfo,
-      boolean CPMode) throws SQLException, IOException
+      boolean CPMode, TaskListener listener) throws SQLException, IOException
   {
+    listener.getLogger().println("		Begin DerbyUtils.compareBaseline");
     // Re-initialize our return variable
     int changeCount = 0;
 
@@ -1272,6 +1273,7 @@ public class DerbyUtils
       }
     }
 
+    listener.getLogger().println("		End DerbyUtils.compareBaseline");
     return changeCount;
 
   }
