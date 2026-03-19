@@ -262,11 +262,17 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
       int canceledMembers = 0;
       int totalMembers = coThreads.size();
       int lastPercentReported = -1;
+      long checkoutStartTime = System.currentTimeMillis();
+      long checkoutTimeoutMs = checkoutThreadTimeout * 60L * 1000L; // Convert minutes to milliseconds
+      
+      listener.getLogger().println("members to synch: " + totalMembers);
       listener.getLogger().println(" ############ Total members to checkout: " + totalMembers);
+      
       while (!coThreads.isEmpty())
       {
         @SuppressWarnings("rawtypes")
         Iterator<Future> iter = coThreads.iterator();
+        
         while (iter.hasNext())
         {
           Future<?> future = iter.next();
@@ -277,15 +283,26 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
             iter.remove();
           } else
           {
-            // Look for the result of this thread's execution within project-specific checkout thread timeout
+            // Look for the result of this thread's execution with a short timeout (1 second)
+            // This allows us to log progress frequently while still waiting for threads
             try
             {
-              future.get(checkoutThreadTimeout, TimeUnit.MINUTES);
+              future.get(1, TimeUnit.SECONDS);
+              // Thread completed successfully
+              checkoutMembers++;
+              iter.remove();
             } catch(TimeoutException e) {
-            	LOGGER.log(Level.SEVERE, "Timeout Exception caught :: ", e);
-                listener.getLogger().println("A Timeout Exception was caught. Failed to checkout contents of file!");
-                listener.getLogger().println(e.getMessage());
+              // Thread not done yet, that's fine - we'll check again next loop
+              // This timeout is expected and allows us to log progress frequently
+              
+              // Check if overall checkout time has exceeded the per-thread timeout
+              long elapsedMs = System.currentTimeMillis() - checkoutStartTime;
+              if (elapsedMs > checkoutTimeoutMs)
+              {
+                LOGGER.log(Level.SEVERE, "Overall checkout timeout exceeded after " + checkoutThreadTimeout + " minutes");
+                listener.getLogger().println("Overall checkout timeout exceeded! Failed to checkout contents after " + checkoutThreadTimeout + " minutes");
                 return false;
+              }
             } catch (ExecutionException e)
             {
               listener.getLogger().println(e.getMessage());
@@ -306,28 +323,21 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
                 return false;
               }
             }
-
-            checkoutMembers++;
-            iter.remove();
           }
         }
-        if (previousCount != (checkoutMembers + canceledMembers))
+        
+        // Always log progress every iteration (which happens every second due to the timeout)
+        int done = checkoutMembers + canceledMembers;
+        int percent = (totalMembers > 0) ? (done * 100 / totalMembers) : 100;
+        int percentBucket = percent / 10;
+        if (percentBucket != (lastPercentReported / 10))
         {
-          int done = checkoutMembers + canceledMembers;
-          int percent = (totalMembers > 0) ? (done * 100 / totalMembers) : 100;
-          int percentBucket = percent / 10;
-          if (percentBucket != (lastPercentReported / 10))
-          {
-            listener.getLogger().println(percent + "% done ...");
-            lastPercentReported = percent;
-          }
-          listener.getLogger().println("members to synch: " + (projectMembersList.size() - done));
-          LOGGER.fine("Checkout process: " + checkoutMembers + " of " + totalMembers
-              + (canceledMembers > 0 ? "(Canceled: " + canceledMembers + ")" : ""));
+          listener.getLogger().println(percent + "% done ...");
+          lastPercentReported = percent;
         }
-        previousCount = checkoutMembers + canceledMembers;
-        // Wait 2 seconds a check again if all threads are done
-        Thread.sleep(2000);
+        listener.getLogger().println("members to synch: " + (totalMembers - done));
+        LOGGER.fine("Checkout process: " + checkoutMembers + " of " + totalMembers
+            + (canceledMembers > 0 ? "(Canceled: " + canceledMembers + ")" : ""));
       }
 
       // Lets advice the user that we've checked out all the members
