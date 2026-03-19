@@ -1121,13 +1121,24 @@ public class DerbyUtils
         rs = pjSelect.executeQuery();
         
         // Now we will compare the adds and updates between the current project and the baseline
-        for (int i = 1; i <= DerbyUtils.getRowCount(rs); i++)
+        int totalRows = DerbyUtils.getRowCount(rs);
+        listener.getLogger().println("PTC Plugin: Begin Compare Baseline...");
+        listener.getLogger().println("PTC Plugin: Number of elements to process: " + totalRows);
+        int lastPercent = -1;
+        for (int i = 1; i <= totalRows; i++)
         {
           // Move the cursor to the current record
           rs.absolute(i);
           Hashtable<CM_PROJECT, Object> rowHash = DerbyUtils.getRowData(rs);
           // Obtain the member we're working with
           String memberName = rowHash.get(CM_PROJECT.NAME).toString();
+
+          int percent = (i * 100) / totalRows;
+          if (percent % 10 == 0 && percent != lastPercent)
+          {
+            listener.getLogger().println(percent + "% done ...");
+            lastPercent = percent;
+          }
 
           // Get the baseline project information for this member
           LOGGER.fine("Comparing file against baseline " + memberName);
@@ -1240,6 +1251,7 @@ public class DerbyUtils
         }
         // Commit changes to the database...
         db.commit();
+        listener.getLogger().println("PTC Plugin: Finished Compare Baseline");
       }
     } finally
 
