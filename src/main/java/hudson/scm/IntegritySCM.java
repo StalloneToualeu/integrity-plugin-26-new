@@ -604,18 +604,27 @@ public class IntegritySCM extends AbstractIntegritySCM implements Serializable
         // Write out the change log file, which will be used by the parser to report the updates
         writeChangeLog(run, listener, changeLogFile, membersInCP, siProject, projectMembersList);
         
-        // Copy the change log file from controller to agent workspace
-        try
+        // Copy the change log file from controller to agent workspace (so it can be opened/viewed on the agent)
+        if (changeLogFile != null)
         {
-          FilePath changeLogOnController = new FilePath(changeLogFile);
-          FilePath changeLogOnAgent = workspace.child("changelog.xml");
-          changeLogOnController.copyTo(changeLogOnAgent);
-          listener.getLogger().println("Change log copied to agent workspace: " + changeLogOnAgent.getRemote());
+          try
+          {
+            FilePath changeLogOnController = new FilePath(changeLogFile);
+            FilePath changeLogOnAgent = workspace.child("changelog.xml");
+            changeLogOnController.copyTo(changeLogOnAgent);
+            listener.getLogger().println("Change log copied to agent workspace: " + changeLogOnAgent.getRemote());
+            LOGGER.fine("Change log copied from " + changeLogFile.getAbsolutePath() + " to "
+                + changeLogOnAgent.getRemote());
+          }
+          catch (Exception e)
+          {
+            listener.getLogger().println("Warning: Failed to copy change log to agent workspace: " + e.getMessage());
+            LOGGER.log(Level.WARNING, "Failed to copy change log to agent workspace", e);
+          }
         }
-        catch (Exception e)
+        else
         {
-          listener.getLogger().println("Warning: Failed to copy change log to agent workspace: " + e.getMessage());
-          LOGGER.log(Level.WARNING, "Failed to copy change log to agent workspace", e);
+          listener.getLogger().println("No changelog file path set, skipping copy to agent.");
         }
 
         // Delete non-members in this workspace, if appropriate.
