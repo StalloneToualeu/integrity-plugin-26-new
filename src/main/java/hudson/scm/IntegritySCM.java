@@ -603,6 +603,20 @@ public class IntegritySCM extends AbstractIntegritySCM implements Serializable
 
         // Write out the change log file, which will be used by the parser to report the updates
         writeChangeLog(run, listener, changeLogFile, membersInCP, siProject, projectMembersList);
+        
+        // Copy the change log file from controller to agent workspace
+        try
+        {
+          FilePath changeLogOnController = new FilePath(changeLogFile);
+          FilePath changeLogOnAgent = workspace.child("changelog.xml");
+          changeLogOnController.copyTo(changeLogOnAgent);
+          listener.getLogger().println("Change log copied to agent workspace: " + changeLogOnAgent.getRemote());
+        }
+        catch (Exception e)
+        {
+          listener.getLogger().println("Warning: Failed to copy change log to agent workspace: " + e.getMessage());
+          LOGGER.log(Level.WARNING, "Failed to copy change log to agent workspace", e);
+        }
 
         // Delete non-members in this workspace, if appropriate.
         if (deleteNonMembers)
@@ -696,10 +710,6 @@ public class IntegritySCM extends AbstractIntegritySCM implements Serializable
 				}
 				listener.getLogger().println("Change log successfully generated: " + changeLogFile.getAbsolutePath());
 			}
-			/** This works if changeLogFile is non null. Implement a disable changelogfile feature if required later.**/
-			// else {
-			//	createEmptyChangeLog(changeLogFile, listener, "changelog");
-			//}
 		}
 	}
 

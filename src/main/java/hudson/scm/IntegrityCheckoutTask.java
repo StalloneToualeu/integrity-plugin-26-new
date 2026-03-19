@@ -258,12 +258,13 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
       }
 
       int checkoutMembers = 0;
-      int previousCount = 0;
       int canceledMembers = 0;
       int totalMembers = coThreads.size();
       int lastPercentReported = -1;
       long checkoutStartTime = System.currentTimeMillis();
       long checkoutTimeoutMs = checkoutThreadTimeout * 60L * 1000L; // Convert minutes to milliseconds
+      long lastLogTime = checkoutStartTime;
+      long logIntervalMs = 1000; // Log every 1 second
       
       listener.getLogger().println("members to synch: " + totalMembers);
       listener.getLogger().println(" ############ Total members to checkout: " + totalMembers);
@@ -272,8 +273,11 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
       {
         @SuppressWarnings("rawtypes")
         Iterator<Future> iter = coThreads.iterator();
+        boolean anyCompleted = false;
         
-        while (iter.hasNext())
+        // Check ONLY one future per iteration with a very short timeout
+        // This keeps the loop responsive and logs frequently
+        if (iter.hasNext())
         {
           Future<?> future = iter.next();
           if (future.isCancelled())
@@ -281,19 +285,19 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
             listener.getLogger().println("Checkout thread " + future.toString() + " was cancelled");
             canceledMembers++;
             iter.remove();
+            anyCompleted = true;
           } else
           {
-            // Look for the result of this thread's execution with a short timeout (1 second)
-            // This allows us to log progress frequently while still waiting for threads
+            // Check this single future with a very short timeout (50ms)
             try
             {
-              future.get(1, TimeUnit.SECONDS);
+              future.get(50, TimeUnit.MILLISECONDS);
               // Thread completed successfully
               checkoutMembers++;
               iter.remove();
+              anyCompleted = true;
             } catch(TimeoutException e) {
-              // Thread not done yet, that's fine - we'll check again next loop
-              // This timeout is expected and allows us to log progress frequently
+              // Thread not done yet - will check next iteration
               
               // Check if overall checkout time has exceeded the per-thread timeout
               long elapsedMs = System.currentTimeMillis() - checkoutStartTime;
@@ -326,18 +330,23 @@ public class IntegrityCheckoutTask implements FileCallable<Boolean>
           }
         }
         
-        // Always log progress every iteration (which happens every second due to the timeout)
-        int done = checkoutMembers + canceledMembers;
-        int percent = (totalMembers > 0) ? (done * 100 / totalMembers) : 100;
-        int percentBucket = percent / 10;
-        if (percentBucket != (lastPercentReported / 10))
+        // Log progress every 1 second based on elapsed time, not iteration count
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastLogTime >= logIntervalMs || anyCompleted)
         {
-          listener.getLogger().println(percent + "% done ...");
-          lastPercentReported = percent;
+          int done = checkoutMembers + canceledMembers;
+          int percent = (totalMembers > 0) ? (done * 100 / totalMembers) : 100;
+          int percentBucket = percent / 10;
+          if (percentBucket != (lastPercentReported / 10))
+          {
+            listener.getLogger().println(" " + percent + "% done ...");
+            lastPercentReported = percent;
+          }
+          listener.getLogger().print("0");
+          LOGGER.fine("Checkout process: " + checkoutMembers + " of " + totalMembers
+              + (canceledMembers > 0 ? "(Canceled: " + canceledMembers + ")" : ""));
+          lastLogTime = currentTime;
         }
-        listener.getLogger().println("members to synch: " + (totalMembers - done));
-        LOGGER.fine("Checkout process: " + checkoutMembers + " of " + totalMembers
-            + (canceledMembers > 0 ? "(Canceled: " + canceledMembers + ")" : ""));
       }
 
       // Lets advice the user that we've checked out all the members
