@@ -34,6 +34,7 @@ import com.mks.api.response.APIException;
 import com.mks.api.response.Response;
 
 import hudson.AbortException;
+import hudson.model.TaskListener;
 import hudson.scm.IntegrityCMMember.CPInfo;
 import hudson.scm.IntegrityCMMember.CPMember;
 import hudson.scm.IntegritySCM.DescriptorImpl;
