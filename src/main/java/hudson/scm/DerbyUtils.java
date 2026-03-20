@@ -939,9 +939,6 @@ public class DerbyUtils
       db = DescriptorImpl.INTEGRITY_DESCRIPTOR.getDataSource().getPooledConnection()
           .getConnection();
       db.setAutoCommit(false);
-
-      db.setAutoCommit(false);
-
       if (CPMode) // CP Mode comparison
       {
         // All members in CP(s) at this stage are from a closed CP. So we update their deltas in the
@@ -1295,7 +1292,6 @@ public class DerbyUtils
       // Get a connection from our pool
       listener.getLogger().print("Priming author information for project members...\n");
       listener.getLogger().println("This may take a while depending on the project size expected 15 mins for 10,000 files...");
-      db.setAutoCommit(false);
 
       while (rs.next()) {
         Hashtable<CM_PROJECT, Object> rowHash = DerbyUtils.getRowData(rs);
@@ -1475,6 +1471,7 @@ public class DerbyUtils
       // Get a connection from our pool
       db = DescriptorImpl.INTEGRITY_DESCRIPTOR.getDataSource().getPooledConnection()
           .getConnection();
+      db.setAutoCommit(false); //  TTS
       if (operation.equalsIgnoreCase(IAPIFields.ADD_OPERATION))
       {
         // Add CP entry to cache
